@@ -8,8 +8,6 @@ fn main() {
     let interface_name = env::args().nth(1).unwrap();
     let interface_names_match = |iface: &NetworkInterface| iface.name == interface_name;
 
-    let f = |x| println(interface_name);
-
     let interfaces = datalink::interfaces();
     let interface = interfaces.into_iter()
         .filter(interface_names_match)
@@ -25,7 +23,7 @@ fn main() {
     loop {
         match rx.next() {
             Ok(packet) => {
-                println!("aaaa")
+                println!("aaaa");
             }
             Err(e) => {
                 panic!("An error occurred while reading: {}", e);
