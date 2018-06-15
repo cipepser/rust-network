@@ -25,6 +25,7 @@ fn main() {
         match rx.next() {
             Ok(packet) => {
                 packet.into_iter()
+                    // TODO: print the recieved packet
                     .map(|b| {
                     });
             }
