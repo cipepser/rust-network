@@ -57,3 +57,7 @@ Ipv6: bb:bb:bb:bb:bb:bb -> aa:aa:aa:aa:aa:aa
 Ipv4: bb:bb:bb:bb:bb:bb -> aa:aa:aa:aa:aa:aa
 Ipv4: aa:aa:aa:aa:aa:aa -> bb:bb:bb:bb:bb:bb
 ```
+
+## references
+* [libpnet](https://github.com/libpnet/libpnet)
+* [Kyoto.なんか #2 で Rust の実践的な話について発表してきました](http://kizkoh.hatenablog.com/entry/2016/08/26/163216)
