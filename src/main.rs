@@ -1,11 +1,9 @@
 extern crate pnet;
 
+use pnet::packet::ethernet::EthernetPacket;
 use pnet::datalink::{self, NetworkInterface};
 use pnet::datalink::Channel::Ethernet;
 use std::env;
-//use pnet::packet::Packet;
-use pnet::packet::ethernet::EthernetPacket;
-//use std::string::String;
 
 fn main() {
     let interface_name = env::args().nth(1).unwrap();
@@ -27,7 +25,8 @@ fn main() {
         match rx.next() {
             Ok(packet) => {
                 let packet = EthernetPacket::new(packet).unwrap();
-                println!("{:?}", packet);
+                println!("{}: {} -> {}", packet.get_ethertype(), packet.get_source(), packet.get_destination());
+
             }
             Err(e) => {
                 panic!("An error occurred while reading: {}", e);
