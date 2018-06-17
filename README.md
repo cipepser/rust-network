@@ -43,4 +43,11 @@ fn main() {
 
 ```sh
 ❯ cargo run --package rust-network --bin rust-network en0
+    Finished dev [unoptimized + debuginfo] target(s) in 0.0 secs
+     Running `target/debug/rust-network en0`
+Ipv6: aa:aa:aa:aa:aa:aa -> bb:bb:bb:bb:bb:bb
+Ipv6: aa:aa:aa:aa:aa:aa -> bb:bb:bb:bb:bb:bb
+Ipv6: bb:bb:bb:bb:bb:bb -> aa:aa:aa:aa:aa:aa
+Ipv4: bb:bb:bb:bb:bb:bb -> aa:aa:aa:aa:aa:aa
+Ipv4: aa:aa:aa:aa:aa:aa -> bb:bb:bb:bb:bb:bb
 ```
