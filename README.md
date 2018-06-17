@@ -2,6 +2,8 @@
 
 ## Ethernet frameの表示
 
+### Source
+
 ```rust
 extern crate pnet;
 
@@ -40,6 +42,10 @@ fn main() {
     }
 }
 ```
+
+### 実行
+
+MACアドレスだけ実行結果から編集してます。実行すると自分の環境のMACアドレスが表示されます。
 
 ```sh
 ❯ cargo run --package rust-network --bin rust-network en0
