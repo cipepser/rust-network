@@ -1,6 +1,6 @@
 extern crate pnet;
 
-use pnet::packet::ethernet::EthernetPacket;
+use pnet::packet::ethernet::{EthernetPacket, EtherType};
 use pnet::datalink::{self, NetworkInterface};
 use pnet::datalink::Channel::Ethernet;
 use std::env;
@@ -32,5 +32,12 @@ fn main() {
                 panic!("An error occurred while reading: {}", e);
             }
         }
+    }
+}
+
+fn handle_packet(interface: &network_interface, ethernet: &EthernetPacket) {
+    match ethernet.get_ethertype() {
+        EtherType::Ipv4 => ,
+        _ => (),
     }
 }
