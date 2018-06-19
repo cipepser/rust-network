@@ -1,6 +1,7 @@
 extern crate pnet;
 
-use pnet::packet::ethernet::{EthernetPacket, EtherType};
+use pnet::packet::ethernet::{EthernetPacket, EtherTypes};
+use pnet::packet::ipv4::Ipv4Packet;
 use pnet::datalink::{self, NetworkInterface};
 use pnet::datalink::Channel::Ethernet;
 use std::env;
@@ -25,8 +26,8 @@ fn main() {
         match rx.next() {
             Ok(packet) => {
                 let packet = EthernetPacket::new(packet).unwrap();
-                println!("{}: {} -> {}", packet.get_ethertype(), packet.get_source(), packet.get_destination());
-
+//                println!("{}: {} -> {}", packet.get_ethertype(), packet.get_source(), packet.get_destination());
+                handle_packet(&interface, &packet);
             }
             Err(e) => {
                 panic!("An error occurred while reading: {}", e);
@@ -35,9 +36,12 @@ fn main() {
     }
 }
 
-fn handle_packet(interface: &network_interface, ethernet: &EthernetPacket) {
+fn handle_packet(interface: &NetworkInterface, ethernet: &EthernetPacket) {
     match ethernet.get_ethertype() {
-        EtherType::Ipv4 => ,
+        EtherTypes::Ipv4 => {
+            let ip = Ipv4Packet::new(ethernet.payload()); // no method named `payload`
+            println!("{}", ip.get_source());
+        }
         _ => (),
     }
 }
