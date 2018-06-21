@@ -40,7 +40,7 @@ fn main() {
 fn handle_packet(interface: &NetworkInterface, ethernet: &EthernetPacket) {
     match ethernet.get_ethertype() {
         EtherTypes::Ipv4 => {
-            let ip = Ipv4Packet::new(ethernet.payload()).unwrap(); // no method named `payload`
+            let ip = Ipv4Packet::new(ethernet.payload()).unwrap();
             println!("{} -> {}", ip.get_source(), ip.get_destination());
         }
         _ => (),
