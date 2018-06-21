@@ -2,6 +2,7 @@ extern crate pnet;
 
 use pnet::packet::ethernet::{EthernetPacket, EtherTypes};
 use pnet::packet::ipv4::Ipv4Packet;
+use pnet::packet::Packet;
 use pnet::datalink::{self, NetworkInterface};
 use pnet::datalink::Channel::Ethernet;
 use std::env;
@@ -39,8 +40,8 @@ fn main() {
 fn handle_packet(interface: &NetworkInterface, ethernet: &EthernetPacket) {
     match ethernet.get_ethertype() {
         EtherTypes::Ipv4 => {
-            let ip = Ipv4Packet::new(ethernet.payload()); // no method named `payload`
-            println!("{}", ip.get_source());
+            let ip = Ipv4Packet::new(ethernet.payload()).unwrap(); // no method named `payload`
+            println!("{} -> {}", ip.get_source(), ip.get_destination());
         }
         _ => (),
     }
