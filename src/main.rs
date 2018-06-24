@@ -3,7 +3,7 @@ extern crate pnet;
 use pnet::packet::ethernet::{EthernetPacket, EtherTypes};
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::Packet;
-use pnet::packet::tcp;
+use pnet::packet::{tcp, udp};
 use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::datalink::{self, NetworkInterface};
 use pnet::datalink::Channel::Ethernet;
@@ -54,7 +54,11 @@ fn handle_l4_packet(_interface: &NetworkInterface, ip: &Ipv4Packet) {
     match ip.get_next_level_protocol() {
         IpNextHeaderProtocols::Tcp => {
             let tcp = tcp::TcpPacket::new(ip.payload()).unwrap();
-            println!("{} -> {}", tcp.get_source(), tcp.get_destination());
+//            println!("{} -> {}", tcp.get_source(), tcp.get_destination());
+        }
+        IpNextHeaderProtocols::Udp => {
+            let udp = udp::UdpPacket::new(ip.payload()).unwrap();
+            println!("{} -> {}", udp.get_source(), udp.get_destination());
         }
         _ => (),
     }
