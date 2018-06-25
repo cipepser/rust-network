@@ -3,6 +3,7 @@ extern crate pnet;
 use pnet::packet::ethernet::{EthernetPacket, EtherTypes};
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::Packet;
+use pnet::packet::arp;
 use pnet::packet::{tcp, udp};
 use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::datalink::{self, NetworkInterface};
@@ -41,6 +42,10 @@ fn main() {
 
 fn handle_packet(interface: &NetworkInterface, ethernet: &EthernetPacket) {
     match ethernet.get_ethertype() {
+        EtherTypes::Arp => {
+            let arp = arp::ArpPacket::new(ethernet.payload()).unwrap();
+            println!("{} -> {}", arp.get_sender_hw_addr(), arp.get_target_hw_addr());
+        }
         EtherTypes::Ipv4 => {
             let ip = Ipv4Packet::new(ethernet.payload()).unwrap();
 //            println!("{} -> {}", ip.get_source(), ip.get_destination());
@@ -53,12 +58,12 @@ fn handle_packet(interface: &NetworkInterface, ethernet: &EthernetPacket) {
 fn handle_l4_packet(_interface: &NetworkInterface, ip: &Ipv4Packet) {
     match ip.get_next_level_protocol() {
         IpNextHeaderProtocols::Tcp => {
-            let tcp = tcp::TcpPacket::new(ip.payload()).unwrap();
+            let _tcp = tcp::TcpPacket::new(ip.payload()).unwrap();
 //            println!("{} -> {}", tcp.get_source(), tcp.get_destination());
         }
         IpNextHeaderProtocols::Udp => {
-            let udp = udp::UdpPacket::new(ip.payload()).unwrap();
-            println!("{} -> {}", udp.get_source(), udp.get_destination());
+            let _udp = udp::UdpPacket::new(ip.payload()).unwrap();
+//            println!("{} -> {}", udp.get_source(), udp.get_destination());
         }
         _ => (),
     }
