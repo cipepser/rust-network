@@ -124,6 +124,37 @@ fn handle_packet(_interface: &NetworkInterface, ethernet: &EthernetPacket) {
   192.168.100.103 -> 224.0.0.251
 ```
 
+## L4ポートの表示
+
+「IPアドレスの表示」の表示と呼び出しは同じなので、該当部分のみ抜粋。
+
+### Source
+
+```rust
+fn handle_packet(interface: &NetworkInterface, ethernet: &EthernetPacket) {
+    match ethernet.get_ethertype() {
+        EtherTypes::Ipv4 => {
+            let ip = Ipv4Packet::new(ethernet.payload()).unwrap();
+            handle_l4_packet(&interface, &ip);
+        }
+        _ => (),
+    }
+}
+
+fn handle_l4_packet(_interface: &NetworkInterface, ip: &Ipv4Packet) {
+    match ip.get_next_level_protocol() {
+        IpNextHeaderProtocols::Tcp => {
+            let tcp = tcp::TcpPacket::new(ip.payload()).unwrap();
+            println!("{} -> {}", tcp.get_source(), tcp.get_destination());
+        }
+        IpNextHeaderProtocols::Udp => {
+            let udp = udp::UdpPacket::new(ip.payload()).unwrap();
+            println!("{} -> {}", udp.get_source(), udp.get_destination());
+        }
+        _ => (),
+    }
+}
+```
 
 ## references
 * [libpnet](https://github.com/libpnet/libpnet)
