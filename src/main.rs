@@ -44,7 +44,15 @@ fn handle_packet(interface: &NetworkInterface, ethernet: &EthernetPacket) {
     match ethernet.get_ethertype() {
         EtherTypes::Arp => {
             let arp = arp::ArpPacket::new(ethernet.payload()).unwrap();
-            println!("{} -> {}", arp.get_sender_hw_addr(), arp.get_target_hw_addr());
+            match arp.get_operation() {
+                arp::ArpOperations::Reply => {
+                    println!("ARP reply({}): {} -> {}", arp.get_sender_proto_addr(), arp.get_sender_hw_addr(), arp.get_target_hw_addr());
+                }
+                arp::ArpOperations::Request => {
+                    println!("ARP request({}): {} -> {}", arp.get_target_proto_addr(), arp.get_sender_hw_addr(), arp.get_target_hw_addr());
+                }
+                _ => (),
+            }
         }
         EtherTypes::Ipv4 => {
             let ip = Ipv4Packet::new(ethernet.payload()).unwrap();
