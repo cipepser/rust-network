@@ -156,6 +156,32 @@ fn handle_l4_packet(_interface: &NetworkInterface, ip: &Ipv4Packet) {
 }
 ```
 
+## Arpの表示
+
+該当部分のみ抜粋。
+
+### Source
+
+```rust
+fn handle_packet(interface: &NetworkInterface, ethernet: &EthernetPacket) {
+    match ethernet.get_ethertype() {
+        EtherTypes::Arp => {
+            let arp = arp::ArpPacket::new(ethernet.payload()).unwrap();
+            match arp.get_operation() {
+                arp::ArpOperations::Reply => {
+                    println!("ARP reply({}): {} -> {}", arp.get_sender_proto_addr(), arp.get_sender_hw_addr(), arp.get_target_hw_addr());
+                }
+                arp::ArpOperations::Request => {
+                    println!("ARP request({}): {} -> {}", arp.get_target_proto_addr(), arp.get_sender_hw_addr(), arp.get_target_hw_addr());
+                }
+                _ => (),
+            }
+        }
+        _ => (),
+    }
+}
+```
+
 ## references
 * [libpnet](https://github.com/libpnet/libpnet)
 * [Kyoto.なんか #2 で Rust の実践的な話について発表してきました](http://kizkoh.hatenablog.com/entry/2016/08/26/163216)
