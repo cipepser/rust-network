@@ -8,10 +8,13 @@ use pnet::packet::{tcp, udp};
 use pnet::packet::ip::IpNextHeaderProtocols;
 use pnet::datalink::{self, NetworkInterface};
 use pnet::datalink::Channel::Ethernet;
-use std::env;
+use std::fs;
+use std::io::{BufReader, Read};
 
 fn main() {
-    let interface_name = env::args().nth(1).unwrap();
+    let mut fr = BufReader::new(fs::File::open("./router.conf").unwrap());
+    let mut interface_name= String::new();
+    fr.read_to_string(&mut interface_name).unwrap();
     let interface_names_match = |iface: &NetworkInterface| iface.name == interface_name;
 
     let interfaces = datalink::interfaces();
