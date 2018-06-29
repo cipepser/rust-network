@@ -1,4 +1,9 @@
+#[macro_use]
+extern crate serde_derive;
+
+extern crate toml;
 extern crate pnet;
+extern crate serde;
 
 use pnet::packet::ethernet::{EthernetPacket, EtherTypes};
 use pnet::packet::ipv4::Ipv4Packet;
@@ -10,11 +15,29 @@ use pnet::datalink::{self, NetworkInterface};
 use pnet::datalink::Channel::Ethernet;
 use std::fs;
 use std::io::{BufReader, Read};
+//use toml::{Parser, Value};
+//use toml;
+
+//#[derive(RustcEncodable, RustcDecodable, Debug)]
+#[derive(Debug, Deserialize)]
+struct Config {
+    interface: Option<InterfaceConfig>,
+}
+
+#[derive(Debug, Deserialize)]
+struct InterfaceConfig {
+    name: Option<String>,
+}
 
 fn main() {
-    let mut fr = BufReader::new(fs::File::open("./router.conf").unwrap());
-    let mut interface_name= String::new();
-    fr.read_to_string(&mut interface_name).unwrap();
+    let mut fr = BufReader::new(fs::File::open("./Router.toml").unwrap());
+    let mut str= String::new();
+    fr.read_to_string(&mut str).unwrap();
+
+    let config: Config = toml::from_str(&str).unwrap();
+//    println!("{:#?}", config);
+
+    let interface_name = config.interface.unwrap().name.unwrap();
     let interface_names_match = |iface: &NetworkInterface| iface.name == interface_name;
 
     let interfaces = datalink::interfaces();
