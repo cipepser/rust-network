@@ -1,11 +1,14 @@
 #[macro_use]
 extern crate serde_derive;
 
-extern crate toml;
+#[macro_use]
+extern crate log;
+
 extern crate pnet;
 extern crate serde;
+extern crate toml;
 
-use pnet::packet::ethernet::{EthernetPacket, EtherTypes};
+use pnet::packet::ethernet::{EtherTypes, EthernetPacket};
 use pnet::packet::ipv4::Ipv4Packet;
 use pnet::packet::Packet;
 use pnet::packet::arp;
@@ -24,46 +27,68 @@ struct Config {
     interface: Option<InterfaceConfig>,
 }
 
-#[derive(Debug, Deserialize)]
-struct InterfaceConfig {
-    name: Option<String>,
+impl Config {
+    fn extract_interface_name(&self) -> Option<String> {
+        self.interface.as_ref()?.name.as_ref().cloned()
+    }
 }
 
-fn main() {
-    let mut fr = BufReader::new(fs::File::open("./Router.toml").unwrap());
-    let mut str= String::new();
-    fr.read_to_string(&mut str).unwrap();
+fn main() -> Result<(), String> {
+    let mut file_content = String::new();
+    let mut fr = fs::File::open("./Router.toml")
+        .map(|f| BufReader::new(f))
+        .map_err(|e| e.to_string())?;
+    fr.read_to_string(&mut file_content)
+        .map_err(|e| e.to_string())?;
 
-    let config: Config = toml::from_str(&str).unwrap();
-//    println!("{:#?}", config);
+    let config: Config = toml::from_str(&file_content).map_err(|e| e.to_string())?;
+    //    println!("{:#?}", config);
 
-    let interface_name = config.interface.unwrap().name.unwrap();
-    let interface_names_match = |iface: &NetworkInterface| iface.name == interface_name;
+    let interface_name = config
+        .extract_interface_name()
+        .ok_or("extract name failed.")?;
 
     let interfaces = datalink::interfaces();
-    let interface = interfaces.into_iter()
-        .filter(interface_names_match)
-        .next()
-        .unwrap();
+    let interface = interfaces
+        .into_iter()
+        .find(|iface: &NetworkInterface| iface.name == interface_name)
+        .ok_or(format!("interface_name={} was not found.", interface_name))?;
 
-    let (mut _tx, mut rx) = match datalink::channel(&interface, Default::default()) {
-        Ok(Ethernet(tx, rx)) => (tx, rx),
-        Ok(_) => panic!("Unhandled channel type"),
-        Err(e) => panic!("An error occurred when creating the datalink channel: {}", e)
-    };
+    let (mut _tx, mut rx) = datalink::channel(&interface, Default::default())
+        .map(|chan| match chan {
+            Ethernet(tx, rx) => (tx, rx),
+            _ => panic!("Unhandled channel type"),
+        })
+        .map_err(|e| {
+            format!(
+                "An error occurred when creating the datalink channel: {}",
+                e.to_string()
+            )
+        })?;
 
     loop {
-        match rx.next() {
+        let next_packet = rx.next()
+            .map_err(|e| format!("An error occurred when read next packet: {}", e.to_string()))
+            .and_then(|packet| {
+                EthernetPacket::new(packet).ok_or("failed to parse ethernet packet".to_string())
+            });
+
+        match next_packet {
             Ok(packet) => {
-                let packet = EthernetPacket::new(packet).unwrap();
-//                println!("{}: {} -> {}", packet.get_ethertype(), packet.get_source(), packet.get_destination());
+                // println!("{}: {} -> {}", packet.get_ethertype(), packet.get_source(), packet.get_destination());
                 handle_packet(&interface, &packet);
             }
-            Err(e) => {
-                panic!("An error occurred while reading: {}", e);
+            Err(err) => {
+                error!("failed to read next packet {}, ignore and continue.", err);
+                continue;
             }
         }
     }
+}
+
+#[derive(Debug, Deserialize)]
+struct InterfaceConfig {
+    name: Option<String>,
 }
 
 fn handle_packet(interface: &NetworkInterface, ethernet: &EthernetPacket) {
@@ -72,17 +97,27 @@ fn handle_packet(interface: &NetworkInterface, ethernet: &EthernetPacket) {
             let arp = arp::ArpPacket::new(ethernet.payload()).unwrap();
             match arp.get_operation() {
                 arp::ArpOperations::Reply => {
-                    println!("ARP reply({}): {} -> {}", arp.get_sender_proto_addr(), arp.get_sender_hw_addr(), arp.get_target_hw_addr());
+                    println!(
+                        "ARP reply({}): {} -> {}",
+                        arp.get_sender_proto_addr(),
+                        arp.get_sender_hw_addr(),
+                        arp.get_target_hw_addr()
+                    );
                 }
                 arp::ArpOperations::Request => {
-                    println!("ARP request({}): {} -> {}", arp.get_target_proto_addr(), arp.get_sender_hw_addr(), arp.get_target_hw_addr());
+                    println!(
+                        "ARP request({}): {} -> {}",
+                        arp.get_target_proto_addr(),
+                        arp.get_sender_hw_addr(),
+                        arp.get_target_hw_addr()
+                    );
                 }
                 _ => (),
             }
         }
         EtherTypes::Ipv4 => {
             let ip = Ipv4Packet::new(ethernet.payload()).unwrap();
-//            println!("{} -> {}", ip.get_source(), ip.get_destination());
+            //            println!("{} -> {}", ip.get_source(), ip.get_destination());
             handle_l4_packet(&interface, &ip);
         }
         _ => (),
@@ -93,11 +128,11 @@ fn handle_l4_packet(_interface: &NetworkInterface, ip: &Ipv4Packet) {
     match ip.get_next_level_protocol() {
         IpNextHeaderProtocols::Tcp => {
             let _tcp = tcp::TcpPacket::new(ip.payload()).unwrap();
-//            println!("{} -> {}", tcp.get_source(), tcp.get_destination());
+            //            println!("{} -> {}", tcp.get_source(), tcp.get_destination());
         }
         IpNextHeaderProtocols::Udp => {
             let _udp = udp::UdpPacket::new(ip.payload()).unwrap();
-//            println!("{} -> {}", udp.get_source(), udp.get_destination());
+            //            println!("{} -> {}", udp.get_source(), udp.get_destination());
         }
         _ => (),
     }
