@@ -74,7 +74,7 @@ fn handle_packet(interface: &NetworkInterface, ethernet: &EthernetPacket) {
         }
         EtherTypes::Ipv4 => {
             let ip = Ipv4Packet::new(ethernet.payload()).unwrap();
-            //            println!("{} -> {}", ip.get_source(), ip.get_destination());
+                        println!("{} -> {}", ip.get_source(), ip.get_destination());
             handle_l4_packet(&interface, &ip);
         }
         _ => (),
@@ -84,12 +84,12 @@ fn handle_packet(interface: &NetworkInterface, ethernet: &EthernetPacket) {
 fn handle_l4_packet(_interface: &NetworkInterface, ip: &Ipv4Packet) {
     match ip.get_next_level_protocol() {
         IpNextHeaderProtocols::Tcp => {
-            let _tcp = tcp::TcpPacket::new(ip.payload()).unwrap();
-            //            println!("{} -> {}", tcp.get_source(), tcp.get_destination());
+            let tcp = tcp::TcpPacket::new(ip.payload()).unwrap();
+                        println!("{} -> {}", tcp.get_source(), tcp.get_destination());
         }
         IpNextHeaderProtocols::Udp => {
-            let _udp = udp::UdpPacket::new(ip.payload()).unwrap();
-            //            println!("{} -> {}", udp.get_source(), udp.get_destination());
+            let udp = udp::UdpPacket::new(ip.payload()).unwrap();
+                        println!("{} -> {}", udp.get_source(), udp.get_destination());
         }
         _ => (),
     }
@@ -133,7 +133,7 @@ fn main() -> Result<(), String> {
 
         match next_packet {
             Ok(packet) => {
-                // println!("{}: {} -> {}", packet.get_ethertype(), packet.get_source(), packet.get_destination());
+                 println!("{}: {} -> {}", packet.get_ethertype(), packet.get_source(), packet.get_destination());
                 handle_packet(&interface, &packet);
             }
             Err(err) => {
