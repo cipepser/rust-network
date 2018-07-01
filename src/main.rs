@@ -18,10 +18,7 @@ use pnet::datalink::{self, NetworkInterface};
 use pnet::datalink::Channel::Ethernet;
 use std::fs;
 use std::io::{BufReader, Read};
-//use toml::{Parser, Value};
-//use toml;
 
-//#[derive(RustcEncodable, RustcDecodable, Debug)]
 #[derive(Debug, Deserialize)]
 struct Config {
     interface: Option<InterfaceConfig>,
@@ -33,62 +30,22 @@ impl Config {
     }
 }
 
-fn main() -> Result<(), String> {
-    let mut file_content = String::new();
-    let mut fr = fs::File::open("./Router.toml")
-        .map(|f| BufReader::new(f))
-        .map_err(|e| e.to_string())?;
-    fr.read_to_string(&mut file_content)
-        .map_err(|e| e.to_string())?;
-
-    let config: Config = toml::from_str(&file_content).map_err(|e| e.to_string())?;
-    //    println!("{:#?}", config);
-
-    let interface_name = config
-        .extract_interface_name()
-        .ok_or("extract name failed.")?;
-
-    let interfaces = datalink::interfaces();
-    let interface = interfaces
-        .into_iter()
-        .find(|iface: &NetworkInterface| iface.name == interface_name)
-        .ok_or(format!("interface_name={} was not found.", interface_name))?;
-
-    let (mut _tx, mut rx) = datalink::channel(&interface, Default::default())
-        .map(|chan| match chan {
-            Ethernet(tx, rx) => (tx, rx),
-            _ => panic!("Unhandled channel type"),
-        })
-        .map_err(|e| {
-            format!(
-                "An error occurred when creating the datalink channel: {}",
-                e.to_string()
-            )
-        })?;
-
-    loop {
-        let next_packet = rx.next()
-            .map_err(|e| format!("An error occurred when read next packet: {}", e.to_string()))
-            .and_then(|packet| {
-                EthernetPacket::new(packet).ok_or("failed to parse ethernet packet".to_string())
-            });
-
-        match next_packet {
-            Ok(packet) => {
-                // println!("{}: {} -> {}", packet.get_ethertype(), packet.get_source(), packet.get_destination());
-                handle_packet(&interface, &packet);
-            }
-            Err(err) => {
-                error!("failed to read next packet {}, ignore and continue.", err);
-                continue;
-            }
-        }
-    }
-}
-
 #[derive(Debug, Deserialize)]
 struct InterfaceConfig {
     name: Option<String>,
+}
+
+fn read_file(path: String) -> Result<String, String> {
+    let mut file_content = String::new();
+
+    let mut fr = fs::File::open(path)
+        .map(|f| BufReader::new(f))
+        .map_err(|e| e.to_string())?;
+
+    fr.read_to_string(&mut file_content)
+        .map_err(|e| e.to_string())?;
+
+    Ok(file_content)
 }
 
 fn handle_packet(interface: &NetworkInterface, ethernet: &EthernetPacket) {
@@ -135,5 +92,54 @@ fn handle_l4_packet(_interface: &NetworkInterface, ip: &Ipv4Packet) {
             //            println!("{} -> {}", udp.get_source(), udp.get_destination());
         }
         _ => (),
+    }
+}
+
+fn main() -> Result<(), String> {
+    let s = match read_file("./Router.toml".to_owned()) {
+        Ok(s) => s,
+        Err(e) => panic!("fail to read config file: {}", e),
+    };
+    let config: Config = toml::from_str(&s).map_err(|e| e.to_string())?;
+
+    let interface_name = config
+        .extract_interface_name()
+        .ok_or("extract name failed.")?;
+
+    let interfaces = datalink::interfaces();
+    let interface = interfaces
+        .into_iter()
+        .find(|iface: &NetworkInterface| iface.name == interface_name)
+        .ok_or(format!("interface_name={} was not found.", interface_name))?;
+
+    let (mut _tx, mut rx) = datalink::channel(&interface, Default::default())
+        .map(|chan| match chan {
+            Ethernet(tx, rx) => (tx, rx),
+            _ => panic!("Unhandled channel type"),
+        })
+        .map_err(|e| {
+            format!(
+                "An error occurred when creating the datalink channel: {}",
+                e.to_string()
+            )
+        })?;
+
+    loop {
+        let next_packet = rx.next()
+            .map_err(|e| format!("An error occurred when read next packet: {}", e.to_string()))
+            .and_then(|packet| {
+                EthernetPacket::new(packet).ok_or("failed to parse ethernet packet".to_string())
+            });
+
+        match next_packet {
+            Ok(packet) => {
+                // println!("{}: {} -> {}", packet.get_ethertype(), packet.get_source(), packet.get_destination());
+                handle_packet(&interface, &packet);
+            }
+            Err(err) => {
+                error!("failed to read next packet {}, ignore and continue.", err);
+                continue;
+            }
+        }
     }
 }
